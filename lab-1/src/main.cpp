@@ -64,6 +64,34 @@ public:
         }
     }
 
+
+
+    void solve() {
+        float hx_hy_2 {std::pow(m_hx, -2) + std::pow(m_hy, -2)};
+        float a {0.2f * hx_hy_2};
+        float b {0.5f * (5 * std::pow(m_hx, -2) - std::pow(m_hy, -2))};
+        float c {0.25f * hx_hy_2};
+
+        auto function = [](float F_im1_jm1, float F_im1_j, float F_im1_jp1,
+                           float F_i_jm1,                  float F_i_jp1,
+                           float F_ip1_jm1, float F_ip1_j, float F_ip1_jp1,
+
+                                            float P_im1_j,
+                           float P_i_jm1,   float P_i_j,   float P_i_jp1,
+                                            float P_ip1_j
+                                            ) {
+
+        }
+
+        // F_i_jp1, F_i_jm1, F_ip1_jp1, F_ip1_j, F_ip1_jm1, F_im1_jp1, F_im1_j, F_im1_jm1
+        for (int time {}; time < m_Nt; ++time) {
+            for (int i {1}; i < m_Nx - 1; ++i) {
+                for (int j {1}; j < m_Ny - 1; ++j) {
+
+                }
+            }
+        }
+    }
 };
 
 int main() {
