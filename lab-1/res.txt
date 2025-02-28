@@ -1,0 +1,8 @@
+                    m_grid[j][i].second = func(prev_grid[j-1][i-1].second, prev_grid[j-1][i].second, prev_grid[j-1][i+1].second,
+                                                  prev_grid[j][i-1].second,                                     prev_grid[j][i+1].second,
+                                                  prev_grid[j+1][i-1].second,   prev_grid[j+1][i].second, prev_grid[j+1][i+1].second,
+
+                                                                             prev_grid[j-1][i].first,
+                                                  prev_grid[j][i-1].first, prev_grid[j][i].first, prev_grid[j][i+1].first,
+                                                                              prev_grid[j+1][i].first
+                                                  );
