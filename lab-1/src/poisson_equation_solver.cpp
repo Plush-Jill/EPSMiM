@@ -4,14 +4,15 @@
 
 #include "poisson_equation_solver.hpp"
 
-float PoissonEquationSolver::calc_new_value(const float F_im1_jm1, const float F_im1_j, const float F_im1_jp1,
-                                        const float F_i_jm1,                        const float F_i_jp1,
-                                        const float F_ip1_jm1, const float F_ip1_j, const float F_ip1_jp1,
 
-                                                               const float P_im1_j,
-                                        const float P_i_jm1,   const float P_i_j,   const float P_i_jp1,
-                                                               const float P_ip1_j
-            ) const {
+float PoissonEquationSolver::calc_new_value(const float F_im1_jm1, const float F_im1_j, const float F_im1_jp1,
+                                            const float F_i_jm1,                        const float F_i_jp1,
+                                            const float F_ip1_jm1, const float F_ip1_j, const float F_ip1_jp1,
+
+                                            const float P_im1_j,
+                                            const float P_i_jm1,   const float P_i_j,   const float P_i_jp1,
+                                            const float P_ip1_j
+) const {
 
     const float first_line = m_b * (F_i_jm1 + F_i_jp1) + m_b * (F_im1_j + F_ip1_j);
     const float second_line = m_c * (F_im1_jm1 + F_im1_jp1 + F_ip1_jm1 + F_ip1_jp1);
@@ -23,8 +24,8 @@ float PoissonEquationSolver::calc_new_value(const float F_im1_jm1, const float F
 
 void PoissonEquationSolver::solve() {
 
-    float delta = INT_MIN;
     for (int time {}; time < m_Nt; ++time) {
+        float delta = INT_MIN;
         std::vector<std::vector<std::pair<float, float>>> prev_grid = m_grid;
         for (int i {1}; i < m_Ny - 1; ++i) {
             for (int j {1}; j < m_Nx - 1; ++j) {

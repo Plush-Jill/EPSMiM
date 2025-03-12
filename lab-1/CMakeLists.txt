@@ -3,6 +3,9 @@ project(lab-1)
 
 set(CMAKE_CXX_STANDARD 20)
 
+#find_package(NSIMD)
+#find_package(NSIMD COMPONENTS avx512)
+
 add_executable(lab-1 src/main.cpp
         src/heat_source_circle.cpp
         src/heat_source_circle.hpp
