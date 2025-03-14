@@ -35,20 +35,26 @@ PoissonEquationSolver::PoissonEquationSolver(const std::string &config_file) :
 
         m_previous_grid = std::make_shared<std::vector<std::vector<std::pair<float, float>>>>
             (std::vector<std::vector<std::pair<float, float>>> (m_Nx, std::vector<std::pair<float, float>>(m_Ny, {0.0, 0.0})));
+
+        m_value_grid = std::make_shared<std::vector<std::vector<float>>> (m_Nx, std::vector<float>(m_Ny, 0.0));
+        m_previous_value_grid = std::make_shared<std::vector<std::vector<float>>> (m_Nx, std::vector<float>(m_Ny, 0.0));
+        m_heat_grid = std::make_shared<std::vector<std::vector<float>>> (m_Nx, std::vector<float>(m_Ny, 0.0));
+
+
         m_deltas = std::vector<float> (m_Nt, 0.0);
 
-        for (int i {}; i < m_Nx; ++i) {
-            for (int j {}; j < m_Ny; ++j) {
-                // m_grid[i][j].first = 0.0;
-                // m_grid[i][j].second = 0.0;
-
-                m_grid->at(i).at(j).first = 0.0;
-                m_grid->at(i).at(j).second = 0.0;
-
-                m_previous_grid->at(i).at(j).first = 0.0;
-                m_previous_grid->at(i).at(j).second = 0.0;
-            }
-        }
+        // for (int i {}; i < m_Nx; ++i) {
+        //     for (int j {}; j < m_Ny; ++j) {
+        //         // m_grid[i][j].first = 0.0;
+        //         // m_grid[i][j].second = 0.0;
+        //
+        //         m_grid->at(i).at(j).first = 0.0;
+        //         m_grid->at(i).at(j).second = 0.0;
+        //
+        //         m_previous_grid->at(i).at(j).first = 0.0;
+        //         m_previous_grid->at(i).at(j).second = 0.0;
+        //     }
+        // }
         for (auto& heat_source : m_heat_sources) {
             for (int j {}; j < m_Ny; ++j) {
                 for (int i {}; i < m_Nx; ++i) {
@@ -58,7 +64,11 @@ PoissonEquationSolver::PoissonEquationSolver(const std::string &config_file) :
                     if (heat_source.is_has_point(x_i, y_j)) {
                         m_grid->at(i).at(j).first = heat_source.get_heat();
                         m_previous_grid->at(i).at(j).first = heat_source.get_heat();
+
+
                         // m_grid[j][i].first = heat_source.get_heat();
+
+                        (*m_heat_grid)[i][j] = heat_source.get_heat();
                     }
                 }
             }
@@ -129,6 +139,28 @@ float PoissonEquationSolver::calc_new_value(const float F_im1_jm1, const float F
     return result;
 };
 
+void PoissonEquationSolver::solve2() {
+    for (int time {}; time < m_Nt; ++time) {
+        float delta = INT_MIN;
+        std::swap(m_previous_value_grid, m_value_grid);
+        for (int i {1}; i < m_Ny - 1; ++i) {
+            for (int j {1}; j < m_Nx - 1; ++j) {
+                (*m_value_grid)[i][j] = calc_new_value((*m_previous_value_grid)[i-1][j-1], (*m_previous_value_grid)[i-1][j], (*m_previous_value_grid)[i-1][j+1],
+                                                         (*m_previous_value_grid)[i][j-1],                                              (*m_previous_value_grid)[i][j+1],
+                                                        (*m_previous_value_grid)[i+1][j-1],  (*m_previous_value_grid)[i+1][j], (*m_previous_value_grid)[i+1][j+1],
+
+                                                                                                    (*m_heat_grid)[i-1][j],
+                                                         (*m_heat_grid)[i][j-1],                (*m_heat_grid)[i][j],               (*m_heat_grid)[i][j+1],
+                                                                                                     (*m_heat_grid)[i+1][j]
+                                              );
+
+                delta = std::max(delta, std::abs((*m_previous_value_grid)[i][j] - (*m_value_grid)[i][j]));
+
+            }
+        }
+        m_deltas[time] = delta;
+    }
+}
 void PoissonEquationSolver::solve() {
 
     for (int time {}; time < m_Nt; ++time) {
@@ -173,7 +205,23 @@ void PoissonEquationSolver::export_grid_value_as_matrix(const std::string &file_
 
     output.close();
 }
+void PoissonEquationSolver::export_grid_value_as_matrix2(const std::string &file_path) const {
+    std::ofstream output (file_path, std::ios::out);
+    if (!output.is_open()) {
+        std::cerr << "Failed to open file: " << "float2.dat" << std::endl;
+        throw std::exception();
+    }
 
+
+    for (int i {}; i < m_value_grid->size(); ++i) {
+        for (int j {}; j < (*m_value_grid)[i].size(); ++j) {
+            output << (*m_value_grid)[i][j] << " ";
+        }
+        output << "\n";
+    }
+
+    output.close();
+}
 
 void PoissonEquationSolver::check_deltas() const {
     int k {};

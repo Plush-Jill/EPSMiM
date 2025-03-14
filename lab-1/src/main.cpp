@@ -4,8 +4,10 @@
 
 int main() {
     PoissonEquationSolver solver {"../config.json"};
-    solver.solve();
-    solver.export_grid_value_as_matrix("../float2.dat");
+    // solver.solve();
+    solver.solve2();
+    // solver.export_grid_value_as_matrix("../float2.dat");
+    solver.export_grid_value_as_matrix2("../float2.dat");
     solver.check_deltas();
 
 

@@ -38,6 +38,11 @@ private:
     std::vector<HeatSourceCircle> m_heat_sources;
     std::shared_ptr<std::vector<std::vector<std::pair<float, float>>>> m_grid; //first - heat, second - function value
     std::shared_ptr<std::vector<std::vector<std::pair<float, float>>>> m_previous_grid; //first - heat, second - function value
+
+    std::shared_ptr<std::vector<std::vector<float>>> m_value_grid;
+    std::shared_ptr<std::vector<std::vector<float>>> m_previous_value_grid;
+    std::shared_ptr<std::vector<std::vector<float>>> m_heat_grid;
+
     std::vector<float> m_deltas;
 
 public:
@@ -54,7 +59,11 @@ public:
 
     void solve();
 
+    void solve2();
+
     void export_grid_value_as_matrix(const std::string& file_path) const;
+
+    void export_grid_value_as_matrix2(const std::string& file_path) const;
 
     void check_deltas() const;
 };
