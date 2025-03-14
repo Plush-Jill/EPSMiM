@@ -59,11 +59,7 @@ public:
 
     void solve();
 
-    void solve2();
-
     void export_grid_value_as_matrix(const std::string& file_path) const;
-
-    void export_grid_value_as_matrix2(const std::string& file_path) const;
 
     void check_deltas() const;
 };
