@@ -18,6 +18,7 @@ private:
     long m_Nx;
     long m_Ny;
     long m_Nt;
+    long m_front_size;
 
     float m_hx;
     float m_hy;
@@ -53,17 +54,6 @@ private:
 
 public:
     explicit PoissonEquationSolver(const std::string& config_file);
-    explicit PoissonEquationSolver(const int Nx, const int Ny, const int Nt);
-
-    [[nodiscard]] float calc_new_value (
-        float F_im1_jm1, float F_im1_j, float F_im1_jp1,
-        float F_i_jm1,                  float F_i_jp1,
-        float F_ip1_jm1, float F_ip1_j, float F_ip1_jp1,
-
-                         float P_im1_j,
-        float P_i_jm1,   float P_i_j,   float P_i_jp1,
-                         float P_ip1_j
-            ) const;
 
     [[nodiscard]] __m512 calc_new_value (
         __m512 F_im1_jm1, __m512 F_im1_j,  __m512 F_im1_jp1,
@@ -76,29 +66,10 @@ public:
 
         ) const;
 
-    [[nodiscard]] __m512 calc_new_value (
-        __m512* p_F_im1_jm1, __m512* p_F_im1_j, __m512* p_F_im1_jp1,
-        __m512* p_F_i_jm1,   /*target*/         __m512* p_F_i_jp1,
-        __m512* p_F_ip1_jm1, __m512* p_F_ip1_j, __m512* p_F_ip1_jp1,
-
-                             __m512* p_P_im1_j,
-        __m512* p_P_i_jm1,   __m512* p_P_i_j,   __m512* p_P_i_jp1,
-                             __m512* p_P_ip1_j
-            ) const;
-
-    void make_one_calc_vectorized_512(float &delta, int i, int j,
-    const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& previous_value_grid,
-    const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& value_grid) const;
 
     void make_one_calc_vectorized_512(int i, int j,
     const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& previous_value_grid,
     const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& value_grid) const;
-
-    void horizontal_step(
-        float& delta,
-        int i,
-        const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& previous_value_grid,
-        const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& value_grid) const;
 
     void horizontal_step(
         int i,
