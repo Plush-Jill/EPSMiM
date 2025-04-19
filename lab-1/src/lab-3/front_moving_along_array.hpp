@@ -4,11 +4,12 @@
 
 #ifndef MOVING_FRONT_ALONG_ARRAY_HPP
 #define MOVING_FRONT_ALONG_ARRAY_HPP
+#include <format>
 #include <functional>
 #include <memory>
 #include <bits/ranges_algo.h>
-
 #include "../common/aligned_allocator.hpp"
+
 
 
 class FrontMovingAlongArray {
@@ -34,11 +35,14 @@ private:
     }
 
     void calc_front_cover_positions() {
+        std::cout << "calc..." << std::endl;
         for (int i {m_front_left_edge_position}; i < m_front_left_edge_position + m_front_size; ++i) {
             if (is_index_covered(i) && !is_ended(i)) {
+                std::cout << std::format("calc function call will be on i = {}", i) << std::endl;
                 m_functions[i % 2](i);
                 ++m_control_time_array[i];
             }
+            std::cout << std::format("calc function call skipped on i = {}", i) << std::endl;
         }
     }
 
@@ -91,6 +95,8 @@ public:
 
         m_functions[0] = place_held_function_1;
         m_functions[1] = place_held_function_2;
+
+        std::cout << "front created" << std::endl;
     }
 
     void move_along() {
@@ -103,6 +109,7 @@ public:
     // }
 
     void move_all_times () {
+        std::cout << "start moving front" << std::endl;
         while (!is_all_ended()) {
             while (!is_front_gone()) {
                 move_front_to_right();

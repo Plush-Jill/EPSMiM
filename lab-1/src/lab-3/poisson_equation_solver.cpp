@@ -6,7 +6,7 @@
 #include <fstream>
 #include <iostream>
 #include <immintrin.h>
-#include "front_front_along_array.hpp"
+#include "front_moving_along_array.hpp"
 
 PoissonEquationSolver::PoissonEquationSolver(const std::string &config_file) :
     m_Xa(0), m_Xb(4.0),
@@ -69,6 +69,9 @@ PoissonEquationSolver::PoissonEquationSolver(const std::string &config_file) :
     m_b_m512 = _mm512_set1_ps(m_b);
     m_c_m512 = _mm512_set1_ps(m_c);
 
+
+    std::cout << std::format("Address of begin of m_value_grid: {}", static_cast<const void*>(&(*m_value_grid)[0][0])) << std::endl;
+    std::cout << std::format("Address of begin of m_previous_value_grid: {}", static_cast<const void*>(&(*m_previous_value_grid)[0][0])) << std::endl;
     std::cout << "created solver v3" << std::endl;
 }
 PoissonEquationSolver::PoissonEquationSolver(const int Nx, const int Ny, const int Nt) :
@@ -218,11 +221,18 @@ void PoissonEquationSolver::make_one_calc_vectorized_512(float &delta, int i, in
     }
 }
 
-void PoissonEquationSolver::make_one_calc_vectorized_512(int i, int j,
+void PoissonEquationSolver::make_one_calc_vectorized_512(const int i, const int j,
     const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& previous_value_grid,
     const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& value_grid) const {
-
-
+    std::cout << std::format("starting make_one_calc_vectorized_512()...") << std::endl;
+    if (previous_value_grid == nullptr || value_grid == nullptr || value_grid->empty()) {
+        std::cerr << "NIGGERS" << std::endl;
+    }
+    std::cout << std::format("Address of begin of value_grid: {}", static_cast<const void*>(&(*value_grid)[0][0])) << std::endl;
+    std::cout << std::format("Address of begin of previous_value_grid: {}", static_cast<const void*>(&(*previous_value_grid)[0][0])) << std::endl;
+    std::cout << std::format("i = {}, j = {}", i, j) << std::endl;
+    std::cout << std::format("trying to load F vectors...") << std::endl;
+    //TODO: тут таргет это нулевая строка, следовательно чтение с i = -1, нужно в FrontMovingAlongArray учесть это.
     const __m512 F_im1_jm1      = _mm512_loadu_ps((*previous_value_grid)[i-1].data() + (j-1));
     const __m512 F_im1_j        = _mm512_loadu_ps((*previous_value_grid)[i-1].data() + (j));
     const __m512 F_im1_jp1      = _mm512_loadu_ps((*previous_value_grid)[i-1].data() + (j+1));
@@ -231,13 +241,15 @@ void PoissonEquationSolver::make_one_calc_vectorized_512(int i, int j,
     const __m512 F_ip1_jm1      = _mm512_loadu_ps((*previous_value_grid)[i+1].data() + (j-1));
     const __m512 F_ip1_j        = _mm512_loadu_ps((*previous_value_grid)[i+1].data() + (j));
     const __m512 F_ip1_jp1      = _mm512_loadu_ps((*previous_value_grid)[i+1].data() + (j+1));
+    std::cout << std::format("F vectors are loaded successfully") << std::endl;
     const __m512 P_im1_j        = _mm512_loadu_ps((*m_heat_grid)[i-1].data() + (j));
     const __m512 P_i_jm1        = _mm512_loadu_ps((*m_heat_grid)[i].data() + (j-1));
     const __m512 P_i_j          = _mm512_loadu_ps((*m_heat_grid)[i].data() + (j));
     const __m512 P_i_jp1        = _mm512_loadu_ps((*m_heat_grid)[i].data() + (j+1));
     const __m512 P_ip1_j        = _mm512_loadu_ps((*m_heat_grid)[i+1].data() + (j));
 
-    __m512 result = calc_new_value(
+    std::cout << std::format("calling calc_new_value()...") << std::endl;
+    const __m512 result = calc_new_value(
         F_im1_jm1, F_im1_j,   F_im1_jp1,
         F_i_jm1,              F_i_jp1,
         F_ip1_jm1, F_ip1_j,   F_ip1_jp1,
@@ -248,7 +260,7 @@ void PoissonEquationSolver::make_one_calc_vectorized_512(int i, int j,
     );
 
 
-    _mm512_storeu_ps((*previous_value_grid)[i].data() + j, result);
+    _mm512_storeu_ps((*value_grid)[i].data() + j, result);
 }
 
 void PoissonEquationSolver::horizontal_step(
@@ -265,6 +277,8 @@ void PoissonEquationSolver::horizontal_step(
     const int i,
     const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& previous_value_grid,
     const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& value_grid) const {
+    std::cout << std::format("calc {}'th line in horizontal_step()", i) << std::endl;
+
     for (int j = 1; j < m_Nx - 1; j += m_alignment_float) {
         make_one_calc_vectorized_512(i, j, previous_value_grid, value_grid);
     }

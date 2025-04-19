@@ -44,8 +44,8 @@ add_executable(lab-3
         src/common/aligned_allocator.hpp
         src/lab-3/poisson_equation_solver.cpp
         src/lab-3/poisson_equation_solver.hpp
-        src/lab-3/front_front_along_array.cpp
-        src/lab-3/front_front_along_array.hpp
+        src/lab-3/front_moving_along_array.cpp
+        src/lab-3/front_moving_along_array.hpp
 )
 
 #target_compile_options(lab-2 PRIVATE -O3 -fopenmp -ftree-vectorize -march=native -fopt-info-vec -fopenmp-simd -mavx512f)

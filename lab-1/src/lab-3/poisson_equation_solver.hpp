@@ -3,7 +3,6 @@
 #include <boost/json.hpp>
 #include <filesystem>
 #include "../common/heat_source_circle.hpp"
-#include <format>
 #include "../common/aligned_allocator.hpp"
 #include <immintrin.h>
 
