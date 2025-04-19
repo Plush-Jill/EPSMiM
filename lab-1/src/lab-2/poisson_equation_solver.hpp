@@ -87,9 +87,12 @@ public:
                              __m512* p_P_ip1_j
             ) const;
 
-    void step_vectorized_512(float &delta, int i, int j,
-    std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>> previous_value_grid,
-    std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>> value_grid) const;
+    void make_one_calc_vectorized_512(float &delta, int i, int j,
+    const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& previous_value_grid,
+    const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& value_grid) const;
+
+    void horizontal_step(float delta, int i, const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& previous_value_grid, const std
+                         ::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& value_grid) const;
 
     void solve();
 

@@ -70,7 +70,6 @@ PoissonEquationSolver::PoissonEquationSolver(const std::string &config_file) :
 
     // std::cout << "created solver v2" << std::endl;
 }
-
 PoissonEquationSolver::PoissonEquationSolver(const int Nx, const int Ny, const int Nt) :
     m_Xa(0), m_Xb(4.0),
     m_Ya(0), m_Yb(4.0) {
@@ -128,7 +127,6 @@ PoissonEquationSolver::PoissonEquationSolver(const int Nx, const int Ny, const i
 
     // std::cout << "created solver v2" << std::endl;
 }
-
 float PoissonEquationSolver::calc_new_value(const float F_im1_jm1,  const float F_im1_j, const float F_im1_jp1,
                                             const float F_i_jm1,    /*target*/           const float F_i_jp1,
                                             const float F_ip1_jm1,  const float F_ip1_j, const float F_ip1_jp1,
@@ -136,7 +134,7 @@ float PoissonEquationSolver::calc_new_value(const float F_im1_jm1,  const float 
                                                                     const float P_im1_j,
                                             const float P_i_jm1,    const float P_i_j,   const float P_i_jp1,
                                                                     const float P_ip1_j
-) const {
+                                                                    ) const {
 
     const auto first_line = m_b * (F_i_jm1 + F_i_jp1) + m_b * (F_im1_j + F_ip1_j);
     const auto second_line = m_c * (F_im1_jm1 + F_im1_jp1 + F_ip1_jm1 + F_ip1_jp1);
@@ -153,8 +151,7 @@ __m512 PoissonEquationSolver::calc_new_value (const __m512 F_im1_jm1, const __m5
                                                                       const __m512 P_im1_j,
                                               const __m512 P_i_jm1,   const __m512 P_i_j,   const __m512 P_i_jp1,
                                                                       const __m512 P_ip1_j
-
-        ) const {
+                                                                      ) const {
 
     const __m512 first_line  = _mm512_fmadd_ps(m_b_m512, _mm512_add_ps(F_i_jm1, F_i_jp1), _mm512_mul_ps(m_b_m512, _mm512_add_ps(F_im1_j, F_ip1_j)));
     const __m512 second_line = _mm512_mul_ps(m_c_m512, _mm512_add_ps(_mm512_add_ps(F_im1_jm1, F_im1_jp1), _mm512_add_ps(F_ip1_jm1, F_ip1_jp1)));
@@ -172,7 +169,7 @@ __m512 PoissonEquationSolver::calc_new_value (
                          __m512* p_P_im1_j,
     __m512* p_P_i_jm1,   __m512* p_P_i_j,   __m512* p_P_i_jp1,
                          __m512* p_P_ip1_j
-        ) const {
+                         ) const {
 
     const __m512 first_line  = _mm512_fmadd_ps(m_b_m512, _mm512_add_ps(*p_F_i_jm1, *p_F_i_jp1), _mm512_mul_ps(m_b_m512, _mm512_add_ps(*p_F_im1_j, *p_F_ip1_j)));
     const __m512 second_line = _mm512_mul_ps(m_c_m512, _mm512_add_ps(_mm512_add_ps(*p_F_im1_jm1, *p_F_im1_jp1), _mm512_add_ps(*p_F_ip1_jm1, *p_F_ip1_jp1)));
@@ -182,10 +179,10 @@ __m512 PoissonEquationSolver::calc_new_value (
     return result;
 };
 
-void PoissonEquationSolver::step_vectorized_512(float &delta, int i, int j,
-    std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>> previous_value_grid,
-    std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>> value_grid) const {
-    __m512 result;
+void PoissonEquationSolver::make_one_calc_vectorized_512(float &delta, int i, int j,
+    const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& previous_value_grid,
+    const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& value_grid) const {
+    // __m512 result = {};
 #ifdef ONLY_ALIGNED_LOAD
                 std::swap(p_F_im1_next, p_F_im1_current);
                 std::swap(p_F_i_next, p_F_i_current);
@@ -218,7 +215,7 @@ void PoissonEquationSolver::step_vectorized_512(float &delta, int i, int j,
                 const __m512 P_i_jp1      = _mm512_mask_blend_ps(m_current_p2_mask, *p_P_i_current, P_i_next);       p_P_i_jp1 = &P_i_jp1;
                 const __m512 P_ip1_j      = _mm512_mask_blend_ps(m_current_p1_mask, *p_P_ip1_current, P_ip1_next);   p_P_ip1_j = &P_ip1_j;
 
-                result = calc_new_value(
+                __m512 result = calc_new_value(
                     p_F_im1_jm1, p_F_im1_j, p_F_im1_jp1, // <- <-- p_F_im1_j_next
                     p_F_i_jm1,              p_F_i_jp1,   // <- <-- p_F_i_j_next
                     p_F_ip1_jm1, p_F_ip1_j, p_F_ip1_jp1, // <- <-- p_F_ip1_j_next
@@ -229,7 +226,7 @@ void PoissonEquationSolver::step_vectorized_512(float &delta, int i, int j,
                 );
 #endif
 
-#ifdef  UNALIGNED_LOAD
+// #ifdef  UNALIGNED_LOAD
 
     const __m512 F_im1_jm1      = _mm512_loadu_ps((*previous_value_grid)[i-1].data() + (j-1));
     const __m512 F_im1_j        = _mm512_loadu_ps((*previous_value_grid)[i-1].data() + (j));
@@ -245,7 +242,7 @@ void PoissonEquationSolver::step_vectorized_512(float &delta, int i, int j,
     const __m512 P_i_jp1        = _mm512_loadu_ps((*m_heat_grid)[i].data() + (j+1));
     const __m512 P_ip1_j        = _mm512_loadu_ps((*m_heat_grid)[i+1].data() + (j));
 
-    result = calc_new_value(
+    __m512 result = calc_new_value(
         F_im1_jm1, F_im1_j,   F_im1_jp1,
         F_i_jm1,              F_i_jp1,
         F_ip1_jm1, F_ip1_j,   F_ip1_jp1,
@@ -255,13 +252,21 @@ void PoissonEquationSolver::step_vectorized_512(float &delta, int i, int j,
         P_ip1_j
     );
 
-#endif
+// #endif
 
     _mm512_storeu_ps((*previous_value_grid)[i].data() + j, result);
 
 
     for (int k = j; k < j + 16; ++k) {
         delta = std::max(delta, std::abs((*previous_value_grid)[i][k] - (*value_grid)[i][k]));
+    }
+}
+
+void PoissonEquationSolver::horizontal_step(float delta, const int i,
+    const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& previous_value_grid,
+    const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& value_grid) const {
+    for (int j = 1; j < m_Nx - 1; j += m_alignment_float) {
+        make_one_calc_vectorized_512(delta, i, j, previous_value_grid, value_grid);
     }
 }
 
@@ -316,9 +321,12 @@ void PoissonEquationSolver::solve() {
             __m512 P_ip1_next     = _mm512_load_ps((*m_heat_grid)[i+1].data());                                         p_P_ip1_next = &P_ip1_next;
             #endif
 
-            for (int j = 1; j < m_Nx - 1; j += m_alignment_float) {
-                step_vectorized_512(delta, i, j, m_previous_value_grid, m_value_grid);
-            }
+            horizontal_step(delta, i, m_previous_value_grid, m_value_grid);
+            // for (int k {}; k < m_Nx - 1; ++k) {
+            //     if ((*m_value_grid)[i][k] != 0) {
+            //         std::cerr << "Non zero value" << std::endl;
+            //     }
+            // }
         }
         m_deltas[time] = delta;
     }
