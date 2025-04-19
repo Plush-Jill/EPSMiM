@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
+#include <format>
 
 template <typename T, std::size_t Alignment>
 struct AlignedAllocator {

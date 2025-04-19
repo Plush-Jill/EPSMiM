@@ -6,6 +6,7 @@
 #include <fstream>
 #include <iostream>
 #include <immintrin.h>
+#include "front_front_along_array.hpp"
 
 PoissonEquationSolver::PoissonEquationSolver(const std::string &config_file) :
     m_Xa(0), m_Xb(4.0),
@@ -68,7 +69,7 @@ PoissonEquationSolver::PoissonEquationSolver(const std::string &config_file) :
     m_b_m512 = _mm512_set1_ps(m_b);
     m_c_m512 = _mm512_set1_ps(m_c);
 
-    // std::cout << "created solver v2" << std::endl;
+    std::cout << "created solver v3" << std::endl;
 }
 PoissonEquationSolver::PoissonEquationSolver(const int Nx, const int Ny, const int Nt) :
     m_Xa(0), m_Xb(4.0),
@@ -125,7 +126,7 @@ PoissonEquationSolver::PoissonEquationSolver(const int Nx, const int Ny, const i
     m_b_m512 = _mm512_set1_ps(m_b);
     m_c_m512 = _mm512_set1_ps(m_c);
 
-    // std::cout << "created solver v2" << std::endl;
+    std::cout << "created solver v3" << std::endl;
 }
 float PoissonEquationSolver::calc_new_value(const float F_im1_jm1,  const float F_im1_j, const float F_im1_jp1,
                                             const float F_i_jm1,    /*target*/           const float F_i_jp1,
@@ -182,51 +183,7 @@ __m512 PoissonEquationSolver::calc_new_value (
 void PoissonEquationSolver::make_one_calc_vectorized_512(float &delta, int i, int j,
     const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& previous_value_grid,
     const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& value_grid) const {
-    // __m512 result = {};
-#ifdef ONLY_ALIGNED_LOAD
-                std::swap(p_F_im1_next, p_F_im1_current);
-                std::swap(p_F_i_next, p_F_i_current);
-                std::swap(p_F_ip1_next, p_F_ip1_current);
-                std::swap(p_P_im1_next, p_P_im1_current);
-                std::swap(p_P_i_next, p_P_i_current);
-                std::swap(p_P_ip1_next, p_P_ip1_current);
 
-                F_im1_next     = _mm512_load_ps((*m_previous_value_grid)[i-1].data() + (j-1) + m_alignment_float);     /*p_F_im1_next = &F_im1_next;*/  p_F_im1_jm1 = p_F_im1_current;
-                F_i_next       = _mm512_load_ps((*m_previous_value_grid)[i].data() + (j-1) + m_alignment_float);       /*p_F_i_next = &F_i_next;*/      p_F_i_jm1 = p_F_i_current;
-                F_ip1_next     = _mm512_load_ps((*m_previous_value_grid)[i+1].data() + (j-1) + m_alignment_float);     /*p_F_ip1_next = &F_ip1_next;*/  p_F_ip1_jm1 = p_F_ip1_current;
-                P_im1_next     = _mm512_load_ps((*m_heat_grid)[i+1].data() + (j-1) + m_alignment_float);               /*p_P_im1_next = &P_im1_next;*/
-                P_i_next       = _mm512_load_ps((*m_heat_grid)[i+1].data() + (j-1) + m_alignment_float);               /*p_P_i_next = &P_i_next;*/      p_P_i_jm1 = p_P_i_current;
-                P_ip1_next     = _mm512_load_ps((*m_heat_grid)[i+1].data() + (j-1) + m_alignment_float);               /*p_P_ip1_next = &P_ip1_next;*/
-
-                F_im1_next     = _mm512_load_ps((*m_previous_value_grid)[i-1].data() + (j-1) + m_alignment_float);                           p_F_im1_next = &F_im1_next;
-                F_i_next       = _mm512_load_ps((*m_previous_value_grid)[i].data() + (j-1) + m_alignment_float);                             p_F_i_next = &F_i_next;
-                F_ip1_next     = _mm512_load_ps((*m_previous_value_grid)[i+1].data() + (j-1) + m_alignment_float);                           p_F_ip1_next = &F_ip1_next;
-                P_im1_next     = _mm512_load_ps((*m_heat_grid)[i+1].data() + (j-1) + m_alignment_float);                                     p_P_im1_next = &P_im1_next;
-                P_i_next       = _mm512_load_ps((*m_heat_grid)[i+1].data() + (j-1) + m_alignment_float);                                     p_P_i_next = &P_i_next;
-                P_ip1_next     = _mm512_load_ps((*m_heat_grid)[i+1].data() + (j-1) + m_alignment_float);                                     p_P_ip1_next = &P_ip1_next;
-
-                const __m512 F_im1_j      = _mm512_mask_blend_ps(m_current_p1_mask, *p_F_im1_current, F_im1_next);   p_F_im1_j = &F_im1_j;
-                const __m512 F_im1_jp1    = _mm512_mask_blend_ps(m_current_p2_mask, *p_F_im1_current, F_im1_next);   p_F_im1_jp1 = &F_im1_jp1;
-                const __m512 F_i_jp1      = _mm512_mask_blend_ps(m_current_p2_mask, *p_F_i_current, F_i_next);       p_F_i_jp1 = &F_i_jp1;
-                const __m512 F_ip1_j      = _mm512_mask_blend_ps(m_current_p1_mask, *p_F_ip1_current, F_ip1_next);   p_F_ip1_j = &F_ip1_j;
-                const __m512 F_ip1_jp1    = _mm512_mask_blend_ps(m_current_p2_mask, *p_F_ip1_current, F_ip1_next);   p_F_ip1_jp1 = &F_ip1_jp1;
-                const __m512 P_im1_j      = _mm512_mask_blend_ps(m_current_p1_mask, *p_P_im1_current, P_im1_next);   p_P_im1_j = &P_im1_j;
-                const __m512 P_i_j        = _mm512_mask_blend_ps(m_current_p1_mask, *p_P_i_current, P_i_next);       p_P_i_j = &P_i_j;
-                const __m512 P_i_jp1      = _mm512_mask_blend_ps(m_current_p2_mask, *p_P_i_current, P_i_next);       p_P_i_jp1 = &P_i_jp1;
-                const __m512 P_ip1_j      = _mm512_mask_blend_ps(m_current_p1_mask, *p_P_ip1_current, P_ip1_next);   p_P_ip1_j = &P_ip1_j;
-
-                __m512 result = calc_new_value(
-                    p_F_im1_jm1, p_F_im1_j, p_F_im1_jp1, // <- <-- p_F_im1_j_next
-                    p_F_i_jm1,              p_F_i_jp1,   // <- <-- p_F_i_j_next
-                    p_F_ip1_jm1, p_F_ip1_j, p_F_ip1_jp1, // <- <-- p_F_ip1_j_next
-
-                                 p_P_im1_j,              // <- <-- p_P_im1_j_next
-                    p_P_i_jm1,   p_P_i_j,   p_P_i_jp1,   // <- <-- p_P_i_j_next
-                                 p_P_ip1_j               // <- <-- p_P_ip1_j_next
-                );
-#endif
-
-// #ifdef  UNALIGNED_LOAD
 
     const __m512 F_im1_jm1      = _mm512_loadu_ps((*previous_value_grid)[i-1].data() + (j-1));
     const __m512 F_im1_j        = _mm512_loadu_ps((*previous_value_grid)[i-1].data() + (j));
@@ -252,7 +209,6 @@ void PoissonEquationSolver::make_one_calc_vectorized_512(float &delta, int i, in
         P_ip1_j
     );
 
-// #endif
 
     _mm512_storeu_ps((*previous_value_grid)[i].data() + j, result);
 
@@ -262,7 +218,42 @@ void PoissonEquationSolver::make_one_calc_vectorized_512(float &delta, int i, in
     }
 }
 
-void PoissonEquationSolver::horizontal_step(float delta, const int i,
+void PoissonEquationSolver::make_one_calc_vectorized_512(int i, int j,
+    const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& previous_value_grid,
+    const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& value_grid) const {
+
+
+    const __m512 F_im1_jm1      = _mm512_loadu_ps((*previous_value_grid)[i-1].data() + (j-1));
+    const __m512 F_im1_j        = _mm512_loadu_ps((*previous_value_grid)[i-1].data() + (j));
+    const __m512 F_im1_jp1      = _mm512_loadu_ps((*previous_value_grid)[i-1].data() + (j+1));
+    const __m512 F_i_jm1        = _mm512_loadu_ps((*previous_value_grid)[i].data() + (j-1));
+    const __m512 F_i_jp1        = _mm512_loadu_ps((*previous_value_grid)[i].data() + (j+1));
+    const __m512 F_ip1_jm1      = _mm512_loadu_ps((*previous_value_grid)[i+1].data() + (j-1));
+    const __m512 F_ip1_j        = _mm512_loadu_ps((*previous_value_grid)[i+1].data() + (j));
+    const __m512 F_ip1_jp1      = _mm512_loadu_ps((*previous_value_grid)[i+1].data() + (j+1));
+    const __m512 P_im1_j        = _mm512_loadu_ps((*m_heat_grid)[i-1].data() + (j));
+    const __m512 P_i_jm1        = _mm512_loadu_ps((*m_heat_grid)[i].data() + (j-1));
+    const __m512 P_i_j          = _mm512_loadu_ps((*m_heat_grid)[i].data() + (j));
+    const __m512 P_i_jp1        = _mm512_loadu_ps((*m_heat_grid)[i].data() + (j+1));
+    const __m512 P_ip1_j        = _mm512_loadu_ps((*m_heat_grid)[i+1].data() + (j));
+
+    __m512 result = calc_new_value(
+        F_im1_jm1, F_im1_j,   F_im1_jp1,
+        F_i_jm1,              F_i_jp1,
+        F_ip1_jm1, F_ip1_j,   F_ip1_jp1,
+
+        P_im1_j,
+        P_i_jm1,   P_i_j,     P_i_jp1,
+        P_ip1_j
+    );
+
+
+    _mm512_storeu_ps((*previous_value_grid)[i].data() + j, result);
+}
+
+void PoissonEquationSolver::horizontal_step(
+    float& delta,
+    const int i,
     const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& previous_value_grid,
     const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& value_grid) const {
     for (int j = 1; j < m_Nx - 1; j += m_alignment_float) {
@@ -270,62 +261,86 @@ void PoissonEquationSolver::horizontal_step(float delta, const int i,
     }
 }
 
+void PoissonEquationSolver::horizontal_step(
+    const int i,
+    const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& previous_value_grid,
+    const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& value_grid) const {
+    for (int j = 1; j < m_Nx - 1; j += m_alignment_float) {
+        make_one_calc_vectorized_512(i, j, previous_value_grid, value_grid);
+    }
+}
+
+// void PoissonEquationSolver::solve() {
+//
+//     for (int time {}; time < m_Nt; ++time) {
+//         float delta = INT_MIN;
+//         std::swap(m_previous_value_grid, m_value_grid);
+//         // #pragma omp simd for reduction(max: delta)
+//         // #pragma omp parallel for reduction(+:delta)
+//         // #pragma omp parallel for
+//         for (int i = 1; i < m_Ny - 1; ++i) {
+//
+//             horizontal_step(delta, i, m_previous_value_grid, m_value_grid);
+//         }
+//         m_deltas[time] = delta;
+//     }
+// }
+
+void PoissonEquationSolver::solve() const {
+    // float delta {};
+    auto front = FrontMovingAlongArray(
+        m_Ny,
+        m_Nt,
+        100,
+        m_previous_value_grid,
+        m_value_grid,
+        [this](
+        const int index,
+            const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& a,
+            const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& b) {
+            this->horizontal_step(index, a, b);
+        }
+    );
+
+    front.move_all_times();
+}
+
+/*
 void PoissonEquationSolver::solve() {
-
-// #define ONLY_ALIGNED_LOAD
-#define UNALIGNED_LOAD
-
-#ifdef ONLY_ALIGNED_LOAD
-    const __m512* p_F_im1_jm1 = nullptr;
-    const __m512* p_F_im1_j = nullptr;
-    const __m512* p_F_im1_jp1 = nullptr;
-    const __m512* p_F_i_jm1 = nullptr;
-    const __m512* p_F_i_jp1 = nullptr;
-    const __m512* p_F_ip1_jm1 = nullptr;
-    const __m512* p_F_ip1_j = nullptr;
-    const __m512* p_F_ip1_jp1 = nullptr;
-    const __m512* p_P_im1_j = nullptr;
-    const __m512* p_P_i_jm1 = nullptr;
-    const __m512* p_P_i_j = nullptr;
-    const __m512* p_P_i_jp1 = nullptr;
-    const __m512* p_P_ip1_j = nullptr;
-
-    const __m512* p_F_im1_current = nullptr;
-    const __m512* p_F_i_current = nullptr;
-    const __m512* p_F_ip1_current = nullptr;
-    const __m512* p_P_im1_current = nullptr;
-    const __m512* p_P_i_current = nullptr;
-    const __m512* p_P_ip1_current = nullptr;
-
-    const __m512* p_F_im1_next = nullptr;
-    const __m512* p_F_i_next = nullptr;
-    const __m512* p_F_ip1_next = nullptr;
-    const __m512* p_P_im1_next = nullptr;
-    const __m512* p_P_i_next = nullptr;
-    const __m512* p_P_ip1_next = nullptr;
-#endif
+    constexpr int front_height = 100;
+    std::vector<bool> mask(front_height, false);
 
     for (int time {}; time < m_Nt; ++time) {
         float delta = INT_MIN;
         std::swap(m_previous_value_grid, m_value_grid);
-        // #pragma omp simd for reduction(max: delta)
-        // #pragma omp parallel for reduction(+:delta)
-        for (int i = 1; i < m_Ny - 1; ++i) {
-            // #pragma omp simd
-            #ifdef ONLY_ALIGNED_LOAD
-            __m512 F_im1_next     = _mm512_load_ps((*m_previous_value_grid)[i-1].data());                               p_F_im1_next = &F_im1_next;
-            __m512 F_i_next       = _mm512_load_ps((*m_previous_value_grid)[i].data());                                 p_F_i_next = &F_i_next;
-            __m512 F_ip1_next     = _mm512_load_ps((*m_previous_value_grid)[i+1].data());                               p_F_ip1_next = &F_ip1_next;
-            __m512 P_im1_next     = _mm512_load_ps((*m_heat_grid)[i+1].data());                                         p_P_im1_next = &P_im1_next;
-            __m512 P_i_next       = _mm512_load_ps((*m_heat_grid)[i+1].data());                                         p_P_i_next = &P_i_next;
-            __m512 P_ip1_next     = _mm512_load_ps((*m_heat_grid)[i+1].data());                                         p_P_ip1_next = &P_ip1_next;
-            #endif
 
-            horizontal_step(delta, i, m_previous_value_grid, m_value_grid);
+        for (int i = 1 - front_height + 1; i < m_Ny - 1; ++i) {
+            // Обновляем маску
+            for (int j = 0; j < front_height; ++j) {
+                int row = i + j;
+                if (row <= 0 || row >= m_Ny - 1) {
+                    mask[j] = false;
+                } else if (i < front_height) {
+                    mask[j] = (j <= i);  // наращиваем фронт
+                } else if (i >= m_Ny - 1 - front_height) {
+                    mask[j] = (j < m_Ny - 1 - i);  // сужаем фронт
+                } else {
+                    mask[j] = true;  // постоянный фронт
+                }
+            }
+
+            // Применяем шаг по всем активным строкам
+            for (int j = 0; j < front_height; ++j) {
+                if (mask[j]) {
+                    horizontal_step(delta, i + j, m_previous_value_grid, m_value_grid);
+                }
+            }
         }
+
         m_deltas[time] = delta;
     }
 }
+*/
 void PoissonEquationSolver::export_grid_value_as_matrix(const std::string &file_path) const {
     std::ofstream output (file_path, std::ios::out);
     if (!output.is_open()) {

@@ -91,10 +91,22 @@ public:
     const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& previous_value_grid,
     const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& value_grid) const;
 
-    void horizontal_step(float delta, int i, const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& previous_value_grid, const std
-                         ::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& value_grid) const;
+    void make_one_calc_vectorized_512(int i, int j,
+    const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& previous_value_grid,
+    const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& value_grid) const;
 
-    void solve();
+    void horizontal_step(
+        float& delta,
+        int i,
+        const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& previous_value_grid,
+        const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& value_grid) const;
+
+    void horizontal_step(
+        int i,
+        const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& previous_value_grid,
+        const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& value_grid) const;
+
+    void solve() const;
 
     void export_grid_value_as_matrix(const std::string& file_path) const;
 
