@@ -35,15 +35,12 @@ private:
     }
 
     void calc_front_cover_positions() {
-        // std::cout << "calc..." << std::endl;
-        // i в пределах фронта
         for (long i {m_front_left_edge_position}; i < m_front_left_edge_position + m_front_size; ++i) {
             if (is_index_covered(i) && !is_ended(i)) {
-                // std::cout << std::format("calc function call will be on i = {}", i) << std::endl;
+                // while (!is_index_ready(i)) {}
                 m_functions[m_control_time_array[i] % 2](i);
                 ++m_control_time_array[i];
             }
-            // std::cout << std::format("calc function call skipped on i = {}", i) << std::endl;
         }
     }
 
@@ -72,6 +69,21 @@ private:
     }
     [[nodiscard]] bool is_front_gone() const {
         return m_front_left_edge_position >= m_array_size;
+    }
+
+    [[nodiscard]] bool is_index_ready(const long i) const {
+        if ((m_control_time_array)[i] == (m_control_time_array)[i - 1] + (1 * (i == 1)) &&
+            (m_control_time_array)[i] == (m_control_time_array)[i + 1]) {
+            return true;
+            }
+        std::cerr << std::format(
+            "index {} isn't ready yet, [i-1] = {}, [i] = {}, [i+1] = {}",
+            i,
+            m_control_time_array[i-1],
+            m_control_time_array[i],
+            m_control_time_array[i+1]
+            ) << std::endl;
+        return false;
     }
 
 public:
@@ -116,9 +128,7 @@ public:
     // }
 
     void move_all_times () {
-        // std::cout << "start moving front" << std::endl;
         while (!is_all_ended()) {
-            std::cout << std::format("current time = {}", m_control_time_array[1]) << std::endl;
             while (!is_front_gone()) {
                 move_front_to_right();
                 calc_front_cover_positions();
@@ -129,6 +139,10 @@ public:
 
     void reset() {
         m_front_left_edge_position = -m_front_size;
+    }
+
+    [[nodiscard]] bool is_front_in_middle() const {
+        return (m_front_left_edge_position > 0) && (m_front_left_edge_position < m_total_time);
     }
 
 };

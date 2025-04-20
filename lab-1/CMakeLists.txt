@@ -58,6 +58,32 @@ target_link_libraries(lab-3
 target_compile_definitions(lab-3 PRIVATE LAB_3)
 
 
+
+add_executable(lab-4
+        src/common/main.cpp
+        src/common/heat_source_circle.cpp
+        src/common/heat_source_circle.hpp
+        src/common/aligned_allocator.hpp
+        src/lab-4/poisson_equation_solver.cpp
+        src/lab-4/poisson_equation_solver.hpp
+        src/lab-4/front/front_left_part.cpp
+        src/lab-4/front/front_left_part.hpp
+        src/lab-4/front/front_abstract.cpp
+        src/lab-4/front/front_abstract.hpp
+        src/lab-4/front/front_middle_part.cpp
+        src/lab-4/front/front_middle_part.hpp
+        src/lab-4/front/front_right_part.cpp
+        src/lab-4/front/front_right_part.hpp
+)
+
+target_compile_options(lab-4 PRIVATE -O3 -fopenmp -mavx512f -ftree-vectorize -march=native -fopenmp-simd)
+find_package(OpenMP REQUIRED)
+target_link_libraries(lab-4
+        boost_json
+        OpenMP::OpenMP_CXX)
+target_compile_definitions(lab-4 PRIVATE LAB_4)
+
+
 #if(OpenMP_CXX_FOUND)
 #    target_link_libraries(lab-2 PUBLIC OpenMP::OpenMP_CXX)
 #endif()
