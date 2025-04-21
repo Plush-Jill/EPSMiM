@@ -5,8 +5,8 @@
 #include "../common/heat_source_circle.hpp"
 #include "../common/aligned_allocator.hpp"
 #include <immintrin.h>
-
-
+#include "front/front_abstract.hpp"
+#include <thread>
 
 class PoissonEquationSolver {
 private:
@@ -19,6 +19,12 @@ private:
     long m_Ny;
     long m_Nt;
     long m_front_size;
+    long m_thread_count;
+    std::vector<std::shared_ptr<FrontAbstract>> m_fronts;
+    std::vector<std::pair<long, long>> m_segment_borders;
+    std::shared_ptr<std::vector<int>> m_control_time_array;
+    std::vector<std::thread> m_threads;
+    std::shared_ptr<std::barrier<>> m_barrier;
 
     float m_hx;
     float m_hy;
@@ -51,7 +57,8 @@ private:
     std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>> m_heat_grid;
 
     std::vector<float> m_deltas;
-
+    void print_time_array() const;
+    void print_time_array_to_file() const;
 public:
     explicit PoissonEquationSolver(const std::string& config_file);
 
@@ -76,9 +83,11 @@ public:
         const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& previous_value_grid,
         const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& value_grid) const;
 
-    void solve() const;
+    void solve();
 
     void export_grid_value_as_matrix(const std::string& file_path) const;
+
+    void check_before_solve() const;
 
     void check_deltas() const;
 };

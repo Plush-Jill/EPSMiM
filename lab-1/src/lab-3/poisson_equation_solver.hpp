@@ -19,6 +19,7 @@ private:
     long m_Ny;
     long m_Nt;
     long m_front_size;
+    std::shared_ptr<std::vector<int>> m_control_time_array;
 
     float m_hx;
     float m_hy;
@@ -51,6 +52,8 @@ private:
     std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>> m_heat_grid;
 
     std::vector<float> m_deltas;
+    void print_time_array() const;
+    void print_time_array_to_file() const;
 
 public:
     explicit PoissonEquationSolver(const std::string& config_file);

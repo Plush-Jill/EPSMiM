@@ -39,6 +39,7 @@ PoissonEquationSolver::PoissonEquationSolver(const std::string &config_file) :
     m_previous_value_grid = std::make_shared<std::vector<std::vector<float, AlignedAllocator<float, 64>>>> (m_Nx, std::vector<float, AlignedAllocator<float, 64>>(m_Ny, 0.0));
     m_heat_grid = std::make_shared<std::vector<std::vector<float, AlignedAllocator<float, 64>>>> (m_Nx, std::vector<float, AlignedAllocator<float, 64>>(m_Ny, 0.0));
 
+    m_control_time_array = std::make_shared<std::vector<int>> (m_Ny, 0);
 
     m_deltas = std::vector<float> (m_Nt, 0.0);
 
@@ -137,6 +138,7 @@ void PoissonEquationSolver::solve() const {
         m_front_size,
         m_previous_value_grid,
         m_value_grid,
+        m_control_time_array,
         [this](
         const int index,
             const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& a,
@@ -146,6 +148,58 @@ void PoissonEquationSolver::solve() const {
     );
 
     front.move_all_times();
+    // print_time_array_to_file();
+
+}
+
+void PoissonEquationSolver::print_time_array_to_file() const {
+    size_t i = 0;
+
+    std::ofstream out("log.txt");
+    if (!out) {
+        std::cerr << "Не удалось открыть файл log.txt для записи." << std::endl;
+        return;
+    }
+
+    while (i < m_control_time_array->size()) {
+        constexpr size_t chunk_size = 50;
+        size_t end = std::min(i + chunk_size, m_control_time_array->size());
+        out << std::format("[{} : {}] ", i, end);
+        for (size_t j = i; j < end; ++j) {
+            out << (*m_control_time_array)[j];
+            if (j + 1 < end) {
+                out << ", ";
+            }
+        }
+        out << "\n";
+        i = end;
+    }
+
+    out.close();
+}
+
+
+void wait_for_enter() {
+    // std::cout << "\nНажмите Enter, чтобы продолжить...";
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+}
+void PoissonEquationSolver::print_time_array() const {
+    size_t i = 0;
+    while (i < m_control_time_array->size()) {
+        constexpr size_t chunk_size = 50;
+        size_t end = std::min(i + chunk_size, m_control_time_array->size());
+        std::cout << std::format("[{} : {}]: ", i, end) << std::endl;
+        for (; i < end; ++i) {
+            std::cout << (*m_control_time_array)[i] << " ";
+        }
+
+        std::cout << std::endl;
+        if (i < m_control_time_array->size()) {
+            wait_for_enter();
+        } else {
+            std::cout << "\nArray ended.\n";
+        }
+    }
 }
 
 

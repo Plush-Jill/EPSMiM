@@ -164,11 +164,34 @@ void front_trying() {
 
 
 }
+class A {
 
+public:
+    virtual ~A() = default;
+
+    virtual void foo() = 0;
+    virtual bool is_virtual() {
+        return true;
+    }
+    [[nodiscard]] const std::type_info& get_type () const {
+        return typeid(*this);
+    }
+};
+
+class B final : public A {
+public:
+    B() : A() {};
+    ~B() override = default;
+    void foo() override {
+        std::cout << "B::foo" << std::endl;
+    }
+};
 
 int main() {
-
-    solve_with_wide_front();
+    const B b {};
+    std::cout << b.get_type().name() << std::endl;
+    std::cout << std::format("is same type: {}", b.get_type() == typeid(B));
+    // solve_with_wide_front();
     return 0;
 
     constexpr int Nt = 100;

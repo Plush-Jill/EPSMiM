@@ -18,7 +18,7 @@ private:
     const long m_total_time;
     const long m_front_size;
     std::vector<bool> m_front;
-    std::vector<int> m_control_time_array;
+    std::shared_ptr<std::vector<int>> m_control_time_array;
 
 
     long m_front_left_edge_position;
@@ -38,8 +38,8 @@ private:
         for (long i {m_front_left_edge_position}; i < m_front_left_edge_position + m_front_size; ++i) {
             if (is_index_covered(i) && !is_ended(i)) {
                 // while (!is_index_ready(i)) {}
-                m_functions[m_control_time_array[i] % 2](i);
-                ++m_control_time_array[i];
+                m_functions[(*m_control_time_array)[i] % 2](i);
+                ++(*m_control_time_array)[i];
             }
         }
     }
@@ -55,7 +55,7 @@ private:
         return true;
     }
     [[nodiscard]] bool is_ended (const long index) const {
-        if (m_control_time_array[index] < m_total_time) {
+        if ((*m_control_time_array)[index] < m_total_time) {
             return false;
         }
         return true;
@@ -72,16 +72,16 @@ private:
     }
 
     [[nodiscard]] bool is_index_ready(const long i) const {
-        if ((m_control_time_array)[i] == (m_control_time_array)[i - 1] + (1 * (i == 1)) &&
-            (m_control_time_array)[i] == (m_control_time_array)[i + 1]) {
+        if (((*m_control_time_array))[i] == ((*m_control_time_array))[i - 1] + (1 * (i == 1)) &&
+            ((*m_control_time_array))[i] == ((*m_control_time_array))[i + 1]) {
             return true;
             }
         std::cerr << std::format(
             "index {} isn't ready yet, [i-1] = {}, [i] = {}, [i+1] = {}",
             i,
-            m_control_time_array[i-1],
-            m_control_time_array[i],
-            m_control_time_array[i+1]
+            (*m_control_time_array)[i-1],
+            (*m_control_time_array)[i],
+            (*m_control_time_array)[i+1]
             ) << std::endl;
         return false;
     }
@@ -93,6 +93,7 @@ public:
         const long front_size,
         const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& value_grid_a,
         const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& value_grid_b,
+        const std::shared_ptr<std::vector<int>>& control_time_array,
         const std::function<void(
             int,
             std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>,
@@ -104,7 +105,7 @@ public:
     m_front_size(front_size),
     m_front_left_edge_position (-front_size) {
         m_front = std::vector<bool>(m_front_size, false);
-        m_control_time_array = std::vector<int>(m_array_size, 0);
+        m_control_time_array = control_time_array;
 
         m_value_grid_a = value_grid_a;
         m_value_grid_b = value_grid_b;

@@ -3,10 +3,16 @@
 //
 
 #include "poisson_equation_solver.hpp"
+
+#include <format>
 #include <fstream>
 #include <iostream>
 #include <immintrin.h>
-#include "front/front_left_part.hpp"
+#include <set>
+
+#include "front/left/front_left_part.hpp"
+#include "front/middle/front_middle_part.hpp"
+#include "front/right/front_right_part.hpp"
 
 PoissonEquationSolver::PoissonEquationSolver(const std::string &config_file) :
     m_Xa(0), m_Xb(4.0),
@@ -22,6 +28,24 @@ PoissonEquationSolver::PoissonEquationSolver(const std::string &config_file) :
     m_Ny = json["Ny"].as_int64();
     m_Nt = json["Nt"].as_int64();
     m_front_size = json["front_size"].as_int64();
+    m_thread_count = json["thread_count"].as_int64();
+
+    // std::vector<std::shared_ptr<FrontAbstract>> m_fronts;
+    // std::vector<std::pair<long, long>> m_segment_borders;
+
+    m_fronts = std::vector<std::shared_ptr<FrontAbstract>>(m_thread_count, nullptr);
+    m_segment_borders = std::vector<std::pair<long, long>> (m_thread_count);
+    m_control_time_array = std::make_shared<std::vector<int>> (m_Ny, 0);
+
+
+    m_segment_borders[0].first = 0;
+    for (int i {}; i < m_thread_count; ++i) {
+        const long border = m_Ny * (static_cast<float>(i + 1) / m_thread_count);
+        // std::cout << std::format("border {}: {}", i, border) << std::endl;
+        m_segment_borders[i].second = border;
+        m_segment_borders[i + 1].first = border;
+    }
+    m_segment_borders[m_thread_count - 1].second = m_Ny;
 
     m_hx = (m_Xb - m_Xa) / static_cast<float>(m_Nx - 1);
     m_hy = (m_Yb - m_Ya) / static_cast<float>(m_Ny - 1);
@@ -70,10 +94,69 @@ PoissonEquationSolver::PoissonEquationSolver(const std::string &config_file) :
     m_b_m512 = _mm512_set1_ps(m_b);
     m_c_m512 = _mm512_set1_ps(m_c);
 
+    m_barrier = std::make_shared<std::barrier<>>(m_thread_count);
+
+    m_fronts[0] = std::make_shared<FrontLeftPart>(
+         m_Ny,
+         m_Nt,
+         m_front_size,
+         m_previous_value_grid,
+         m_value_grid,
+         m_control_time_array,
+         m_segment_borders[0],
+         m_barrier,
+         [this](
+         const int index,
+             const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& a,
+             const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& b) {
+             this->horizontal_step(index, a, b);
+         }
+     );
+
+    for (int i {1}; i < m_thread_count - 1; ++i) {
+        m_fronts[i] = std::make_shared<FrontMiddlePart>(
+            m_Ny,
+            m_Nt,
+            m_front_size,
+            m_previous_value_grid,
+            m_value_grid,
+            m_control_time_array,
+            m_segment_borders[i],
+            m_barrier,
+            [this](
+                const int index,
+                const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& a,
+                const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& b) {
+                this->horizontal_step(index, a, b);
+        });
+    }
+
+    m_fronts[m_thread_count - 1] = std::make_shared<FrontRightPart>(
+        m_Ny,
+        m_Nt,
+        m_front_size,
+        m_previous_value_grid,
+        m_value_grid,
+        m_control_time_array,
+        m_segment_borders[m_thread_count - 1],
+        m_barrier,
+        [this](
+            const int index,
+            const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& a,
+            const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& b) {
+            this->horizontal_step(index, a, b);
+    });
+
+    m_fronts[0]->set_right_neighbour(m_fronts[1]);
+    for (int i {1} ; i < m_thread_count - 1; ++i) {
+        m_fronts[i]->set_left_neighbour(m_fronts[i - 1]);
+        m_fronts[i]->set_right_neighbour(m_fronts[i + 1]);
+    }
+    m_fronts[m_thread_count - 1]->set_left_neighbour(m_fronts[m_thread_count - 2]);
 
     // std::cout << std::format("Address of begin of m_value_grid: {}", static_cast<const void*>(&(*m_value_grid)[0][0])) << std::endl;
     // std::cout << std::format("Address of begin of m_previous_value_grid: {}", static_cast<const void*>(&(*m_previous_value_grid)[0][0])) << std::endl;
-    // std::cout << "created solver v3" << std::endl;
+    std::cout << "created solver v4" << std::endl;
 }
 
 __m512 PoissonEquationSolver::calc_new_value (const __m512 F_im1_jm1, const __m512 F_im1_j, const __m512 F_im1_jp1,
@@ -144,24 +227,127 @@ void PoissonEquationSolver::horizontal_step(
     }
 }
 
-void PoissonEquationSolver::solve() const {
-    auto front = FrontMovingAlongArray(
+void PoissonEquationSolver::check_before_solve() const {
+    std::cout << std::format("Checking before solving...") << std::endl;
+
+    // long m_Nx;
+    // long m_Ny;
+    // long m_Nt;
+    // long m_front_size;
+    // long m_thread_count;
+    // std::vector<std::shared_ptr<FrontAbstract>> m_fronts;
+    // std::vector<std::pair<long, long>> m_segment_borders;
+    // std::shared_ptr<std::vector<int>> m_control_time_array;
+    // std::vector<std::thread> m_threads;
+
+    std::cout << std::format(
+        "Nx: {}\n"
+        "Ny: {}\n"
+        "Nt: {}\n"
+        "front_size: {}\n"
+        "thread_count: {}\n",
+        m_Nx,
         m_Ny,
         m_Nt,
         m_front_size,
-        m_previous_value_grid,
-        m_value_grid,
-        [this](
-        const int index,
-            const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& a,
-            const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& b) {
-            this->horizontal_step(index, a, b);
-        }
-    );
+        m_thread_count
+        ) << std::endl;
 
-    front.move_all_times();
+    // std::cout << std::format("segments:") << std::endl;
+    // for (int i {}; i < m_thread_count; ++i) {
+    //     std::cout << std::format("segment {}: ({}, {})", i, m_segment_borders[i].first, m_segment_borders[i].second) << std::endl;
+    // }
 }
 
+
+void PoissonEquationSolver::solve() {
+    // check_before_solve();
+    // std::cout << std::format("start solving...") << std::endl;
+    for (int i {}; i < m_thread_count; ++i) {
+
+    }
+    // for (int i {0}; i < m_thread_count; ++i) {}
+    for (int i = 0; i < m_thread_count; ++i) {
+        m_threads.emplace_back([this, i]() {
+            m_fronts[i]->move_all_times();
+        });
+        // std::cout << std::format("thread {} started", i) << std::endl;
+
+    }
+
+
+
+    for (auto& thread : m_threads) {
+        if (thread.joinable()) {
+            thread.join();
+        }
+    }
+
+    // print_time_array_to_file();
+
+}
+
+void PoissonEquationSolver::print_time_array_to_file() const {
+    size_t i = 0;
+
+    std::ofstream out("log.txt");
+    if (!out) {
+        std::cerr << "can't open file log.txt to write" << std::endl;
+        return;
+    }
+
+    while (i < m_control_time_array->size()) {
+        constexpr size_t chunk_size = 50;
+        size_t end = std::min(i + chunk_size, m_control_time_array->size());
+        out << std::format("[{} : {}] ", i, end);
+        for (size_t j = i; j < end; ++j) {
+            out << (*m_control_time_array)[j];
+            if (j + 1 < end) {
+                out << ", ";
+            }
+        }
+        out << "\n";
+        i = end;
+    }
+
+    out.close();
+}
+
+void wait_for_enter() {
+    // std::cout << "\nНажмите Enter, чтобы продолжить...";
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+}
+void PoissonEquationSolver::print_time_array() const {
+    const size_t chunk_size = 50;
+    size_t i = 0;
+    while (i < m_control_time_array->size()) {
+        size_t end = std::min(i + chunk_size, m_control_time_array->size());
+        std::cout << std::format("[{} : {}]: ", i, end) << std::endl;
+        for (; i < end; ++i) {
+            std::cout << (*m_control_time_array)[i] << " ";
+        }
+
+        std::cout << std::endl;
+        if (i < m_control_time_array->size()) {
+            wait_for_enter();
+        } else {
+            std::cout << "\nВывод завершён.\n";
+        }
+    }
+}
+    // std::set<int> time_set;
+    //
+    // for (int i {}; i < m_control_time_array->size() - 1; ++i) {
+    //     if (!time_set.contains((*m_control_time_array)[i])) {
+    //         time_set.insert((*m_control_time_array)[i]);
+    //     }
+    // }
+    // std::cout << std::format("time_set:") << std::endl;
+    // for (int i : time_set) {
+    //     std::cout << std::format("{}, ", i);
+    // }
+    // std::cout << std::endl;
+// }
 
 void PoissonEquationSolver::export_grid_value_as_matrix(const std::string &file_path) const {
     std::ofstream output (file_path, std::ios::out);
