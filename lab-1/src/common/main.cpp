@@ -15,7 +15,9 @@ int main(int argc, char *argv[]) {
 
     PoissonEquationSolver solver {"/home/plush-jill/All_Random/git/EPSMiM/lab-1/config.json"};
     solver.solve();
-    // solver.export_grid_value_as_matrix("/home/plush-jill/All_Random/git/EPSMiM/lab-1/float2.dat");
+    if (solver.is_should_export()) {
+        solver.export_grid_value_as_matrix("/home/plush-jill/All_Random/git/EPSMiM/lab-1/float2.dat");
+    }
     // solver.check_deltas();
 
     return EXIT_SUCCESS;

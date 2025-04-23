@@ -35,7 +35,7 @@ private:
     }
 
     void calc_front_cover_positions() {
-        for (long i {m_front_left_edge_position}; i < m_front_left_edge_position + m_front_size; ++i) {
+        for (long i {m_front_left_edge_position + m_front_size - 1}; i >= m_front_left_edge_position; --i) {
             if (is_index_covered(i) && !is_ended(i)) {
                 // while (!is_index_ready(i)) {}
                 m_functions[(*m_control_time_array)[i] % 2](i);

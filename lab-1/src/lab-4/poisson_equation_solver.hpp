@@ -57,9 +57,11 @@ private:
     std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>> m_heat_grid;
 
     std::vector<float> m_deltas;
+    bool m_export;
     void print_time_array() const;
     void print_time_array_to_file() const;
 public:
+    [[nodiscard]] bool is_should_export() const;
     explicit PoissonEquationSolver(const std::string& config_file);
 
     [[nodiscard]] __m512 calc_new_value (

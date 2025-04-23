@@ -1,6 +1,12 @@
 #!/bin/bash
-#
-# ./cmake-build-debug/lab-1 это я исполнял скрипт из директории на 1 выше директории с бинарником, заменишь на своё.
-/opt/intel/oneapi/advisor/2025.0/bin64/advixe-cl --collect=survey --project-dir=./ -- ./cmake-build-debug/lab-1
-/opt/intel/oneapi/advisor/2025.0/bin64/advixe-cl --collect=tripcounts --flop --project-dir=./ -- ./cmake-build-debug/lab-1
-/opt/intel/oneapi/advisor/2025.0/bin64/advixe-cl --report=roofline --project-dir=./
+
+if [ -z "$1" ]; then
+    echo "Ошибка: укажите путь к исполняемому файлу как первый аргумент."
+    exit 1
+fi
+
+EXECUTABLE="$1"
+/opt/intel/oneapi/advisor/2025.1/bin64/advixe-cl --collect=survey --project-dir=./ -- $EXECUTABLE
+/opt/intel/oneapi/advisor/2025.1/bin64/advixe-cl --collect=tripcounts --flop --project-dir=./ -- $EXECUTABLE
+/opt/intel/oneapi/advisor/2025.1/bin64/advixe-cl --report=roofline --project-dir=./
+

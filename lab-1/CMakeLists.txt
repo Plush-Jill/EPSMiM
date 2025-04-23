@@ -28,7 +28,7 @@ add_executable(lab-2
 )
 
 #target_compile_options(lab-2 PRIVATE -O3 -fopenmp -ftree-vectorize -march=native -fopt-info-vec -fopenmp-simd -mavx512f)
-target_compile_options(lab-2 PRIVATE -O3 -fopenmp -mavx512f -ftree-vectorize -march=native -fopenmp-simd)
+target_compile_options(lab-2 PRIVATE -O3 -fopenmp -mavx512f -ftree-vectorize -march=native -fopenmp-simd -funroll-loops)
 #target_compile_options(lab-2 PRIVATE -DNSIMD_AVX2 -O3 -I/home/plush-jill/All_Random/git/nsimd/include -march=native)
 find_package(OpenMP REQUIRED)
 target_link_libraries(lab-2

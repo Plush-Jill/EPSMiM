@@ -20,7 +20,7 @@ void FrontAbstract::calc_front_cover_positions() {
     //     m_front_left_edge_position + m_front_size - 1,
     //     get_reset_count()
     //     ) << std::endl;
-    for (long i {m_front_left_edge_position}; i < m_front_left_edge_position + m_front_size; ++i) {
+    for (long i {m_front_left_edge_position + m_front_size - 1}; i >= m_front_left_edge_position; --i) {
         if (is_index_covered(i) /*&& (*m_control_time_array)[i] <= m_total_time*/ /*&& !is_line_need_calc_in_current_reset(i)*/) {
             m_functions[(*m_control_time_array)[i] % 2](i);
             ++(*m_control_time_array)[i];

@@ -18,59 +18,7 @@ PoissonEquationSolver::PoissonEquationSolver(const std::string &config_file) :
     m_Nx = json["Nx"].as_int64();
     m_Ny = json["Ny"].as_int64();
     m_Nt = json["Nt"].as_int64();
-
-    m_hx = (m_Xb - m_Xa) / static_cast<float>(m_Nx - 1);
-    m_hy = (m_Yb - m_Ya) / static_cast<float>(m_Ny - 1);
-
-    float Xs1 = m_Xa + (m_Xb - m_Xa) / 3;
-    float Ys1 = m_Ya + (m_Yb - m_Ya) * 2 / 3;
-    float Xs2 = m_Xa + (m_Xb - m_Xa) * 2 / 3;
-    float Ys2 = m_Ya + (m_Yb - m_Ya) / 3;
-    float R = static_cast<float>(0.1) * std::min(m_Xb - m_Xa, m_Yb - m_Ya);
-
-    m_heat_sources.emplace_back(Xs1, Ys1, R, 0.1);
-    m_heat_sources.emplace_back(Xs2, Ys2, R, -0.1);
-
-    m_value_grid = std::make_shared<std::vector<std::vector<float>>> (m_Nx, std::vector<float>(m_Ny, 0.0));
-    m_previous_value_grid = std::make_shared<std::vector<std::vector<float>>> (m_Nx, std::vector<float>(m_Ny, 0.0));
-    m_heat_grid = std::make_shared<std::vector<std::vector<float>>> (m_Nx, std::vector<float>(m_Ny, 0.0));
-
-
-    m_deltas = std::vector<float> (m_Nt, 0.0);
-
-    for (auto& heat_source : m_heat_sources) {
-        for (int j {}; j < m_Ny; ++j) {
-            for (int i {}; i < m_Nx; ++i) {
-
-                float x_i = m_Xa + (static_cast<float>(i) * m_hx);
-                float y_j = m_Ya + (static_cast<float>(j) * m_hy);
-                if (heat_source.is_has_point(x_i, y_j)) {
-                    (*m_heat_grid)[i][j] = heat_source.get_heat();
-                }
-            }
-        }
-    }
-
-    const float hx_pow_minus1 = 1.0f / m_hx;
-    const float hy_pow_minus1 = 1.0f / m_hy;
-    hx_pow_minus2 = static_cast<float>(std::pow(1.0f / m_hx, 2));
-    hy_pow_minus2 = static_cast<float>(std::pow(1.0f / m_hy, 2));
-
-    m_hx_hy_2 = hx_pow_minus2 + hy_pow_minus2;
-    m_a = 1.0f / (5.0f * m_hx_hy_2);
-    m_b = static_cast<float>((1.0f / 2.0f) * (5.0f * hy_pow_minus2 - 1.0f * hx_pow_minus2));
-    m_c = m_hx_hy_2 / 4;
-
-    // std::cout << "created solver v1" << std::endl;
-}
-
-PoissonEquationSolver::PoissonEquationSolver(const int Nx, const int Ny, const int Nt) :
-    m_Xa(0), m_Xb(4.0),
-    m_Ya(0), m_Yb(4.0) {
-
-    m_Nx = Nx;
-    m_Ny = Ny;
-    m_Nt = Nt;
+    m_export = json["export"].as_bool();
 
     m_hx = (m_Xb - m_Xa) / static_cast<float>(m_Nx - 1);
     m_hy = (m_Yb - m_Ya) / static_cast<float>(m_Ny - 1);

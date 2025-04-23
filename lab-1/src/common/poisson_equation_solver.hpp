@@ -37,10 +37,11 @@ private:
     std::shared_ptr<std::vector<std::vector<float>>> m_heat_grid;
 
     std::vector<float> m_deltas;
+    bool m_export;
 
 public:
+    [[nodiscard]] bool is_should_export() const;
     explicit PoissonEquationSolver(const std::string& config_file);
-    explicit PoissonEquationSolver(const int Nx, const int Ny, const int Nt);
 
     [[nodiscard]] float calc_new_value (float F_im1_jm1, float F_im1_j, float F_im1_jp1,
                                         float F_i_jm1,                  float F_i_jp1,

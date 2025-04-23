@@ -2,6 +2,7 @@
   "Nx": 8000,
   "Ny": 8000,
   "Nt": 100,
-  "front_size": 10,
-  "thread_count": 6
+  "front_size": 26,
+  "thread_count": 6,
+  "export": false
 }
