@@ -10,9 +10,9 @@
 #include <immintrin.h>
 #include <set>
 
-#include "front/left/front_left_part.hpp"
-#include "front/middle/front_middle_part.hpp"
-#include "front/right/front_right_part.hpp"
+#include "window/left/window_left_part.hpp"
+#include "window/middle/window_middle_part.hpp"
+#include "window/right/window_right_part.hpp"
 
 PoissonEquationSolver::PoissonEquationSolver(const std::string &config_file) :
     m_Xa(0), m_Xb(4.0),
@@ -31,17 +31,17 @@ PoissonEquationSolver::PoissonEquationSolver(const std::string &config_file) :
     m_thread_count = json["thread_count"].as_int64();
     m_export = json["export"].as_bool();
 
-    // std::vector<std::shared_ptr<FrontAbstract>> m_fronts;
+    // std::vector<std::shared_ptr<WindowAbstract>> m_windows;
     // std::vector<std::pair<long, long>> m_segment_borders;
 
-    m_fronts = std::vector<std::shared_ptr<FrontAbstract>>(m_thread_count, nullptr);
+    m_windows = std::vector<std::shared_ptr<WindowAbstract>>(m_thread_count, nullptr);
     m_segment_borders = std::vector<std::pair<long, long>> (m_thread_count);
     m_control_time_array = std::make_shared<std::vector<int>> (m_Ny, 0);
 
 
     m_segment_borders[0].first = 0;
     for (int i {}; i < m_thread_count; ++i) {
-        const long border = m_Ny * (static_cast<float>(i + 1) / m_thread_count);
+        const long border = m_Ny * (static_cast<float>(i + 1) / static_cast<float>(m_thread_count));
         // std::cout << std::format("border {}: {}", i, border) << std::endl;
         m_segment_borders[i].second = border;
         m_segment_borders[i + 1].first = border;
@@ -97,7 +97,9 @@ PoissonEquationSolver::PoissonEquationSolver(const std::string &config_file) :
 
     m_barrier = std::make_shared<std::barrier<>>(m_thread_count);
 
-    m_fronts[0] = std::make_shared<FrontLeftPart>(
+    int core_number {1};
+
+    m_windows[0] = std::make_shared<WindowLeftPart>(
          m_Ny,
          m_Nt,
          m_front_size,
@@ -106,6 +108,7 @@ PoissonEquationSolver::PoissonEquationSolver(const std::string &config_file) :
          m_control_time_array,
          m_segment_borders[0],
          m_barrier,
+         core_number,
          [this](
          const int index,
              const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& a,
@@ -113,9 +116,10 @@ PoissonEquationSolver::PoissonEquationSolver(const std::string &config_file) :
              this->horizontal_step(index, a, b);
          }
      );
+    ++core_number;
 
-    for (int i {1}; i < m_thread_count - 1; ++i) {
-        m_fronts[i] = std::make_shared<FrontMiddlePart>(
+    for (int i {1}; i < m_thread_count - 1; ++i, ++core_number) {
+        m_windows[i] = std::make_shared<WindowMiddlePart>(
             m_Ny,
             m_Nt,
             m_front_size,
@@ -124,6 +128,7 @@ PoissonEquationSolver::PoissonEquationSolver(const std::string &config_file) :
             m_control_time_array,
             m_segment_borders[i],
             m_barrier,
+            core_number,
             [this](
                 const int index,
                 const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& a,
@@ -132,7 +137,8 @@ PoissonEquationSolver::PoissonEquationSolver(const std::string &config_file) :
         });
     }
 
-    m_fronts[m_thread_count - 1] = std::make_shared<FrontRightPart>(
+    ++core_number;
+    m_windows[m_thread_count - 1] = std::make_shared<WindowRightPart>(
         m_Ny,
         m_Nt,
         m_front_size,
@@ -141,6 +147,7 @@ PoissonEquationSolver::PoissonEquationSolver(const std::string &config_file) :
         m_control_time_array,
         m_segment_borders[m_thread_count - 1],
         m_barrier,
+        core_number,
         [this](
             const int index,
             const std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>& a,
@@ -148,12 +155,12 @@ PoissonEquationSolver::PoissonEquationSolver(const std::string &config_file) :
             this->horizontal_step(index, a, b);
     });
 
-    m_fronts[0]->set_right_neighbour(m_fronts[1]);
+    m_windows[0]->set_right_neighbour(m_windows[1]);
     for (int i {1} ; i < m_thread_count - 1; ++i) {
-        m_fronts[i]->set_left_neighbour(m_fronts[i - 1]);
-        m_fronts[i]->set_right_neighbour(m_fronts[i + 1]);
+        m_windows[i]->set_left_neighbour(m_windows[i - 1]);
+        m_windows[i]->set_right_neighbour(m_windows[i + 1]);
     }
-    m_fronts[m_thread_count - 1]->set_left_neighbour(m_fronts[m_thread_count - 2]);
+    m_windows[m_thread_count - 1]->set_left_neighbour(m_windows[m_thread_count - 2]);
 
     // std::cout << std::format("Address of begin of m_value_grid: {}", static_cast<const void*>(&(*m_value_grid)[0][0])) << std::endl;
     // std::cout << std::format("Address of begin of m_previous_value_grid: {}", static_cast<const void*>(&(*m_previous_value_grid)[0][0])) << std::endl;
@@ -287,9 +294,9 @@ void PoissonEquationSolver::check_before_solve() const {
     // long m_Nx;
     // long m_Ny;
     // long m_Nt;
-    // long m_front_size;
+    // long m_window_size;
     // long m_thread_count;
-    // std::vector<std::shared_ptr<FrontAbstract>> m_fronts;
+    // std::vector<std::shared_ptr<WindowAbstract>> m_windows;
     // std::vector<std::pair<long, long>> m_segment_borders;
     // std::shared_ptr<std::vector<int>> m_control_time_array;
     // std::vector<std::thread> m_threads;
@@ -323,7 +330,7 @@ void PoissonEquationSolver::solve() {
     // for (int i {0}; i < m_thread_count; ++i) {}
     for (int i = 0; i < m_thread_count; ++i) {
         m_threads.emplace_back([this, i]() {
-            m_fronts[i]->move_all_times();
+            m_windows[i]->move_all_times();
         });
         // std::cout << std::format("thread {} started", i) << std::endl;
 

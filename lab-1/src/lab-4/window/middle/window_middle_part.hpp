@@ -6,17 +6,17 @@
 #define FRONT_MIDDLE_PART_HPP
 #include <format>
 
-#include "../front_abstract.hpp"
+#include "../window_abstract.hpp"
 
 
-class FrontMiddlePart final : public FrontAbstract {
+class WindowMiddlePart final : public WindowAbstract {
 private:
     [[nodiscard]] bool is_index_covered(long index) const override;
     // void wait_neighbours() override;
     [[nodiscard]] bool is_index_near_right_border(long index) const;
 
 public:
-    FrontMiddlePart(
+    WindowMiddlePart(
         const long array_size,
         const long total_time,
         const long front_size,
@@ -25,13 +25,14 @@ public:
         const std::shared_ptr<std::vector<int>>& control_time_array,
         const std::pair<int, int>& control_time_array_borders,
         const std::shared_ptr<std::barrier<>>& barrier,
+        const int core_number,
         const std::function<void(
             int,
             std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>,
             std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>
         )>& function
     ) :
-    FrontAbstract(
+    WindowAbstract(
         array_size,
         total_time,
         front_size,
@@ -40,10 +41,11 @@ public:
         control_time_array,
         control_time_array_borders,
         barrier,
+        core_number,
         function
         ) {
-        // ++m_front_left_edge_position;
-        // std::cout << std::format("created middle front at pos {}", m_front_left_edge_position) << std::endl;
+        // ++m_left_edge_position;
+        // std::cout << std::format("created middle window at pos {}", m_left_edge_position) << std::endl;
 
     }
 };

@@ -2,25 +2,26 @@
 // Created by plush-jill on 4/20/25.
 //
 
-#include "front_abstract.hpp"
+#include "window_abstract.hpp"
 
+#include <cstring>
 #include <format>
 #include <set>
 #include <fstream>
-void FrontAbstract::move_front_to_right() {
-    ++m_front_left_edge_position;
+void WindowAbstract::move_window_to_right() {
+    ++m_left_edge_position;
 }
 
-void FrontAbstract::calc_front_cover_positions() {
+void WindowAbstract::calc_window_cover_positions() {
     // std::cout << std::format(
-    //     "front ({}, {}) calc positions [{} : {}] in sector {}",
+    //     "window ({}, {}) calc positions [{} : {}] in sector {}",
     //     m_control_time_array_borders.first,
     //     m_control_time_array_borders.second,
-    //     m_front_left_edge_position,
-    //     m_front_left_edge_position + m_front_size - 1,
+    //     m_left_edge_position,
+    //     m_left_edge_position + m_window_size - 1,
     //     get_reset_count()
     //     ) << std::endl;
-    for (long i {m_front_left_edge_position + m_front_size - 1}; i >= m_front_left_edge_position; --i) {
+    for (long i {m_left_edge_position + m_window_size - 1}; i >= m_left_edge_position; --i) {
         if (is_index_covered(i) /*&& (*m_control_time_array)[i] <= m_total_time*/ /*&& !is_line_need_calc_in_current_reset(i)*/) {
             m_functions[(*m_control_time_array)[i] % 2](i);
             ++(*m_control_time_array)[i];
@@ -29,7 +30,7 @@ void FrontAbstract::calc_front_cover_positions() {
     // sleep(1);
 }
 
-bool FrontAbstract::is_index_ready(const long i) const {
+bool WindowAbstract::is_index_ready(const long i) const {
     if ((*m_control_time_array)[i] == (*m_control_time_array)[i - 1] &&
         (*m_control_time_array)[i] == (*m_control_time_array)[i + 1]) {
         return true;
@@ -37,12 +38,12 @@ bool FrontAbstract::is_index_ready(const long i) const {
     return false;
 }
 
-bool FrontAbstract::is_index_in_array(const long i) const {
+bool WindowAbstract::is_index_in_array(const long i) const {
     return (i > 0 && i < m_array_size - 1);
 
 }
 
-bool FrontAbstract::is_vertical_part_finalized() const {
+bool WindowAbstract::is_vertical_part_finalized() const {
     const long left {m_control_time_array_borders.first == 0 ? 1 : m_control_time_array_borders.first};
     const long right {m_control_time_array_borders.second == (m_array_size - 1) ? (m_array_size - 1) : m_control_time_array_borders.second};
     for (long i {left}; i < right; ++i) {
@@ -54,7 +55,7 @@ bool FrontAbstract::is_vertical_part_finalized() const {
     return true;
 }
 
-bool FrontAbstract::is_array_finalized() const {
+bool WindowAbstract::is_array_finalized() const {
     for (int i {1}; i < m_array_size - 1; ++i) {
         if (!is_line_need_calc_in_current_reset(i)) {
             return false;
@@ -64,7 +65,7 @@ bool FrontAbstract::is_array_finalized() const {
     return true;
 }
 
-bool FrontAbstract::is_sector_finalized() const {
+bool WindowAbstract::is_sector_finalized() const {
     // const long left {m_control_time_array_borders.first == 0 ? 1 : m_control_time_array_borders.first};
     // const long right {m_control_time_array_borders.second == (m_array_size - 1) ? (m_array_size - 1) : m_control_time_array_borders.second};
     long left {m_control_time_array_borders.first};
@@ -79,7 +80,7 @@ bool FrontAbstract::is_sector_finalized() const {
 
     // if (m_control_time_array_borders.first != 0) {
         // std::cout << std::format(
-        //     "FrontAbstract::is_sector_finalized(): (left, right) = ({}, {})",
+        //     "WindowAbstract::is_sector_finalized(): (left, right) = ({}, {})",
         //     left, right
         //     ) << std::endl;
     // }
@@ -100,50 +101,58 @@ bool FrontAbstract::is_sector_finalized() const {
     return true;
 }
 
-bool FrontAbstract::is_line_need_calc_in_current_reset(const long index) const {
-    if ((*m_control_time_array)[index] <= (m_reset_count + 1) * m_front_size) {
+bool WindowAbstract::is_line_need_calc_in_current_reset(const long index) const {
+    if ((*m_control_time_array)[index] <= (m_reset_count + 1) * m_window_size) {
         return false;
     }
     return true;
 }
 
-bool FrontAbstract::is_front_gone() const {
-    return m_front_left_edge_position >= m_control_time_array_borders.second;
+bool WindowAbstract::is_window_gone() const {
+    return m_left_edge_position >= m_control_time_array_borders.second;
 }
 
-bool FrontAbstract::is_ready_to_reset() const {
+bool WindowAbstract::is_ready_to_reset() const {
     return m_ready_to_reset;
 }
 
-void FrontAbstract::move_along() {
+void WindowAbstract::move_along() {
     // while (!is_array_finalized()) {
-    while (!is_front_gone()) {
-        move_front_to_right();
-        calc_front_cover_positions();
+    while (!is_window_gone()) {
+        move_window_to_right();
+        calc_window_cover_positions();
     }
 }
 // }
 
-void FrontAbstract::move_all_times() {
-    for (int i {}; i < m_total_time / m_front_size + 1; ++i) {
+void WindowAbstract::move_all_times() {
+    for (int i {}; i < m_total_time / m_window_size + 1; ++i) {
         // while (!is_vertical_part_finalized()) {
-        while (!is_front_gone()) {
-            calc_front_cover_positions();
-            move_front_to_right();
-        }
-        // std::cout << std::format(
-        //     "front ({}, {}) finished sector {} and start waiting, sector_finalized = {}",
-        //     m_control_time_array_borders.first,
-        //     m_control_time_array_borders.second,
-        //     get_reset_count(),
-        //     is_sector_finalized()) << std::endl;
+        move_along();
         // print_time_array_to_file(std::format("log_{}-{}-after-sector-{}.txt", m_control_time_array_borders.first, m_control_time_array_borders.second, get_reset_count()));
         wait_neighbours();
         reset();
     }
 }
 
-void FrontAbstract::print_time_array_to_file(const std::string& file_name) const {
+void WindowAbstract::start() {
+    //TODO: сделать привязку к ядру.
+
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    CPU_SET(m_core_number, &cpuset);
+
+    const pthread_t current_thread = pthread_self();
+    if (const int result = pthread_setaffinity_np(current_thread, sizeof(cpu_set_t), &cpuset); result != 0) {
+        std::cerr << std::format("Failed to set thread affinity to core {}: {}", m_core_number, strerror(result)) << std::endl;
+        throw std::runtime_error("Thread affinity setting failed");
+    }
+
+
+    move_all_times();
+}
+
+void WindowAbstract::print_time_array_to_file(const std::string& file_name) const {
     size_t i = 0;
 
     std::ofstream out(file_name, std::ios::out);
@@ -169,47 +178,47 @@ void FrontAbstract::print_time_array_to_file(const std::string& file_name) const
     out.close();
 }
 
-void FrontAbstract::reset() {
-    m_front_left_edge_position = m_control_time_array_borders.first - m_front_size;
+void WindowAbstract::reset() {
+    m_left_edge_position = m_control_time_array_borders.first - m_window_size;
     ++m_reset_count;
 }
 
-bool FrontAbstract::is_front_further_left_border() const {
+bool WindowAbstract::is_window_further_left_border() const {
     return
-        (m_front_left_edge_position > m_control_time_array_borders.first) &&
-        (m_front_left_edge_position < m_control_time_array_borders.second - m_front_size);
+        (m_left_edge_position > m_control_time_array_borders.first) &&
+        (m_left_edge_position < m_control_time_array_borders.second - m_window_size);
 }
 
-bool FrontAbstract::is_index_in_front(const long index) const {
+bool WindowAbstract::is_index_in_window(const long index) const {
     return
-        index - m_front_left_edge_position < m_front_size &&
-        index - m_front_left_edge_position > 0;
+        index - m_left_edge_position < m_window_size &&
+        index - m_left_edge_position > 0;
 }
 
-bool FrontAbstract::is_index_in_borders(const long i) const {
+bool WindowAbstract::is_index_in_borders(const long i) const {
     return i >= m_control_time_array_borders.first && i < m_control_time_array_borders.second;
 }
 
-long FrontAbstract::get_reset_count() const {
+long WindowAbstract::get_reset_count() const {
     return m_reset_count;
 }
 
-void FrontAbstract::set_right_neighbour(const std::shared_ptr<FrontAbstract> &neighbour) {
+void WindowAbstract::set_right_neighbour(const std::shared_ptr<WindowAbstract> &neighbour) {
     m_neighbours.second = neighbour;
 }
 
-void FrontAbstract::set_left_neighbour(const std::shared_ptr<FrontAbstract> &neighbour) {
+void WindowAbstract::set_left_neighbour(const std::shared_ptr<WindowAbstract> &neighbour) {
     m_neighbours.first = neighbour;
 }
 
 
-void FrontAbstract::wait_neighbours() {
+void WindowAbstract::wait_neighbours() {
     m_barrier->arrive_and_wait();
     // print_time_set();
     // m_barrier->arrive_and_wait();
 }
 
-void FrontAbstract::print_time_set() const {
+void WindowAbstract::print_time_set() const {
     std::set<int> time_set;
 
     for (int i {}; i < m_array_size - 1; ++i) {

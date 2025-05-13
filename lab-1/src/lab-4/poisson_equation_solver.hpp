@@ -5,7 +5,7 @@
 #include "../common/heat_source_circle.hpp"
 #include "../common/aligned_allocator.hpp"
 #include <immintrin.h>
-#include "front/front_abstract.hpp"
+#include "window/window_abstract.hpp"
 #include <thread>
 
 class PoissonEquationSolver {
@@ -20,7 +20,7 @@ private:
     long m_Nt;
     long m_front_size;
     long m_thread_count;
-    std::vector<std::shared_ptr<FrontAbstract>> m_fronts;
+    std::vector<std::shared_ptr<WindowAbstract>> m_windows;
     std::vector<std::pair<long, long>> m_segment_borders;
     std::shared_ptr<std::vector<int>> m_control_time_array;
     std::vector<std::thread> m_threads;

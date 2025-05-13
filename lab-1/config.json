@@ -4,5 +4,5 @@
   "Nt": 100,
   "front_size": 26,
   "thread_count": 6,
-  "export": false
+  "export": true
 }

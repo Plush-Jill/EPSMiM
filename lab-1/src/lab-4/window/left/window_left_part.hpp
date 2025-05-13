@@ -6,17 +6,17 @@
 #define MOVING_FRONT_ALONG_ARRAY_HPP
 #include <format>
 
-#include "../front_abstract.hpp"
+#include "../window_abstract.hpp"
 
 
 
-class FrontLeftPart final : public FrontAbstract {
+class WindowLeftPart final : public WindowAbstract {
 private:
     [[nodiscard]] bool is_index_covered(long index) const override;
     // void wait_neighbours() override;
 
 public:
-    FrontLeftPart(
+    WindowLeftPart(
     const long array_size,
     const long total_time,
     const long front_size,
@@ -25,13 +25,14 @@ public:
     const std::shared_ptr<std::vector<int>>& control_time_array,
     const std::pair<int, int>& control_time_array_borders,
     const std::shared_ptr<std::barrier<>>& barrier,
+    const int core_number,
     const std::function<void(
         int,
         std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>,
         std::shared_ptr<std::vector<std::vector<float, AlignedAllocator<float, 64>>>>
     )>& function
     ) :
-    FrontAbstract(
+    WindowAbstract(
         array_size,
         total_time,
         front_size,
@@ -40,9 +41,10 @@ public:
         control_time_array,
         control_time_array_borders,
         barrier,
+        core_number,
         function
         ) {
-        // std::cout << std::format("created left front at pos {}", m_front_left_edge_position) << std::endl;
+        // std::cout << std::format("created left window at pos {}", m_left_edge_position) << std::endl;
 
     }
 

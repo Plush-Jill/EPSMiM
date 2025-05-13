@@ -66,14 +66,14 @@ add_executable(lab-4
         src/common/aligned_allocator.hpp
         src/lab-4/poisson_equation_solver.cpp
         src/lab-4/poisson_equation_solver.hpp
-        src/lab-4/front/left/front_left_part.cpp
-        src/lab-4/front/left/front_left_part.hpp
-        src/lab-4/front/front_abstract.cpp
-        src/lab-4/front/front_abstract.hpp
-        src/lab-4/front/middle/front_middle_part.cpp
-        src/lab-4/front/middle/front_middle_part.hpp
-        src/lab-4/front/right/front_right_part.cpp
-        src/lab-4/front/right/front_right_part.hpp
+        src/lab-4/window/left/window_left_part.cpp
+        src/lab-4/window/left/window_left_part.hpp
+        src/lab-4/window/window_abstract.cpp
+        src/lab-4/window/window_abstract.hpp
+        src/lab-4/window/middle/window_middle_part.cpp
+        src/lab-4/window/middle/window_middle_part.hpp
+        src/lab-4/window/right/window_right_part.cpp
+        src/lab-4/window/right/window_right_part.hpp
 )
 
 target_compile_options(lab-4 PRIVATE -O3 -fopenmp -mavx512f -ftree-vectorize -march=native -fopenmp-simd)
